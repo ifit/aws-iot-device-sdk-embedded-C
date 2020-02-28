@@ -28,7 +28,7 @@ option( IOT_BUILD_CLONE_SUBMODULES
         ON )
 
 # Unity test framework does not export the correct symbols for DLLs.
-set( ALLOW_SHARED_LIBRARIES ON )
+set( ALLOW_SHARED_LIBRARIES OFF )
 
 include( CMakeDependentOption )
 CMAKE_DEPENDENT_OPTION( BUILD_SHARED_LIBS
@@ -78,7 +78,7 @@ if( ${IOT_BUILD_TESTS} )
 endif()
 
 # Build the demos.
-add_subdirectory( demos )
+# add_subdirectory( demos ) //We do not care to build the demos
 
 # Common libraries and platform port. This creates the iotbase library target.
 add_subdirectory( libraries/standard/common )
