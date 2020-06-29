@@ -75,8 +75,11 @@ static void init_as_needed(void)
  */
 void *iot_port_malloc(unsigned int size)
 {
+	void * rv;
     init_as_needed();
-    return ih_mempool_malloc(mem_helper.mempool, size);
+    rv = ih_mempool_malloc(mem_helper.mempool, size);
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != rv);
+    return rv;
 }
 
 /**

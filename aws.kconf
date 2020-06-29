@@ -5,20 +5,24 @@ config AWS_SDK_ENABLED
     bool "Enable the AWS SDK"
     default y
     depends on IH_ESP32
-    help "Enable or disable the AWS SDK"
+    select IH_TIME_USE_MS
+    help 
+        Enable or disable the AWS SDK
 
 config ICON_AWS_PORT_MEMPOOL_SIZE
     int "AWS Mempool Size"
     default 1024
     range 1024 4096
     depends on AWS_SDK_ENABLED
-    help "The size of the mempool in bytes used by the amazon AWS"
+    help 
+        The size of the mempool in bytes used by the amazon AWS
 
 config ICON_AWS_PORT_MEMPOOL_MAX_CHUNKS
     int "AWS Mempool max chunks"
     default 128
     range 15 512
     depends on AWS_SDK_ENABLED
-    help "The max number of chunks that can be allocated by AWS malloc"
+    help 
+        The max number of chunks that can be allocated by AWS malloc
 
 endmenu

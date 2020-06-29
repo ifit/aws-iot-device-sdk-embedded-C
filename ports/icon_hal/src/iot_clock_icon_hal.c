@@ -91,7 +91,7 @@ uint64_t IotClock_GetTimeMs(void)
     /* Implement this function as specified here:
      * https://docs.aws.amazon.com/freertos/latest/lib-ref/c-sdk/platform/platform_clock_function_gettimems.html
      */
-    return 0;
+	return ih_time_get_time_epoch_ms();
 }
 
 /*-----------------------------------------------------------*/
@@ -101,6 +101,7 @@ void IotClock_SleepMs(uint32_t sleepTimeMs)
     /* Implement this function as specified here:
      * https://docs.aws.amazon.com/freertos/latest/lib-ref/c-sdk/platform/platform_clock_function_sleepms.html
      */
+	ih_task_sleep(sleepTimeMs);
 }
 
 /*-----------------------------------------------------------*/
@@ -180,8 +181,8 @@ static void timer_callback_function(TimerHandle_t xTimer)
         IH_ASSERT(IH_ERR_LEVEL_ERROR, pdPASS == xTimerChangePeriod(worker->rtos_timer, worker->periodMs, portMAX_DELAY));
         IH_ASSERT(IH_ERR_LEVEL_ERROR, pdPASS == xTimerStart(worker->rtos_timer, portMAX_DELAY));
     }
-    //TODO Need to run the task here:
-    IH_ASSERT_NOT_IMPLEMENTED;
+	IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL !=  worker->expirationRoutine);
+    worker->expirationRoutine(worker->pArgument);
 }
 /*-----------------------------------------------------------*/
 
@@ -204,11 +205,15 @@ bool IotClock_TimerArm(IotTimer_t *pTimer,
     {
         return false;
     }
+
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, 0 != relativeTimeoutMs || periodMs != 0);
+
     worker->periodMs = periodMs;
     worker->relativeTimeoutMs = relativeTimeoutMs;
     if(NULL == worker->rtos_timer)
     {
-        worker->rtos_timer = xTimerCreate("Clock_Timer_Interface", 500, pdFALSE, worker, timer_callback_function);
+    	//If the timer does not exist then we need to create it.  Note that the 1000 period is changed below so it does not matter what its value is here.
+        worker->rtos_timer = xTimerCreate("Clock_Timer_Interface", 1000, pdFALSE, worker, timer_callback_function);
         assert(NULL != worker->rtos_timer);
     }
     if(0 != relativeTimeoutMs)
