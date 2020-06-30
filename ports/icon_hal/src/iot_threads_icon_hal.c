@@ -26,6 +26,7 @@
 
 /* The config header is always included first. */
 #include "iot_config.h"
+#include "iot_port_mem_helper.h"
 
 /* Platform threads include. */
 #include "platform/iot_threads.h"
@@ -109,6 +110,8 @@ struct iot_thread_data_entry_s
     size_t stackSize; //!< The task's stack size
     const char *name; //!< The name of the task
     TaskHandle_t handle; //!< The handle for the task
+    StaticTask_t TaskBuffer; //!< Task Buffer used to hold the tasks TCB
+    StackType_t   *Stack; //!< The stack to use with the task
 }; //!< Structure that holds data for each task to create and run
 
 struct iot_fifo_cleanup_data_s
@@ -143,7 +146,7 @@ static struct iot_thread_data_entry_s iot_threads_table[15] =
     IOT_THREAD_TABLE_INIT_ELEMENT(15)
 }; //!< Table that is used to keep track of the allocated tasks
 
-static portMUX_TYPE iot_thread_master_mux = portMUX_INITIALIZER_UNLOCKED;
+static portMUX_TYPE iot_thread_master_mux = portMUX_INITIALIZER_UNLOCKED; //!< Mutex that protects the modules data
 
 /***********************************************************************************/
 /***************************** Function Definitions ********************************/
@@ -183,6 +186,7 @@ static void iot_thread_cleanup_task(void *data, uint16_t data_size)
     vTaskDelete(typed->entry->handle);
 
     IOT_THREAD_ENTER_CRITICAL()
+    iot_port_free(typed->entry->Stack);
     typed->entry->threadRoutine = NULL;
     typed->entry->pArgument = NULL;
     typed->entry->priority = 0;
@@ -282,7 +286,21 @@ bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
         return false;
     }
 
-    if(pdPASS != xTaskCreate(iot_thread_woker, table_entry->name, table_entry->stackSize, table_entry, table_entry->priority, &table_entry->handle))
+    table_entry->Stack = iot_port_malloc(stackSize);
+    if(NULL == table_entry->Stack)
+    {
+        IOT_THREAD_ENTER_CRITICAL()
+        table_entry->threadRoutine = NULL;
+        table_entry->pArgument = NULL;
+        table_entry->priority = 0;
+        table_entry->stackSize = 0;
+        IOT_THREAD_EXIT_CRITICAL()
+        return false;
+    }
+
+    table_entry->handle = xTaskCreateStatic(iot_thread_woker, table_entry->name, table_entry->stackSize, table_entry, table_entry->priority,
+                                            table_entry->Stack, &table_entry->TaskBuffer);
+    if(NULL == table_entry->handle)
     {
         IOT_THREAD_ENTER_CRITICAL()
         table_entry->threadRoutine = NULL;
@@ -296,8 +314,35 @@ bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
     return true;
 }
 
-/*-----------------------------------------------------------*/
-
+/**
+ * @brief Create a new mutex.
+ *
+ * This function creates a new, unlocked mutex. It must be called on an uninitialized
+ * #IotMutex_t. This function must not be called on an already-initialized #IotMutex_t.
+ *
+ * @param[in] pNewMutex Pointer to the memory that will hold the new mutex.
+ * @param[in] recursive Set to `true` to create a recursive mutex, i.e. a mutex that
+ * may be locked multiple times by the same thread. If the system does not support
+ * recursive mutexes, this function should do nothing and return `false`.
+ *
+ * @return `true` if mutex creation succeeds; `false` otherwise.
+ *
+ * @see @ref platform_threads_function_mutexdestroy
+ *
+ * <b>Example</b>
+ * @code{c}
+ * IotMutex_t mutex;
+ *
+ * // Create non-recursive mutex.
+ * if( IotMutex_Create( &mutex, false ) == true )
+ * {
+ *     // Lock and unlock the mutex...
+ *
+ *     // Destroy the mutex when it's no longer needed.
+ *     IotMutex_Destroy( &mutex );
+ * }
+ * @endcode
+ */
 bool IotMutex_Create(IotMutex_t *pNewMutex, bool recursive)
 {
     /* Implement this function as specified here:
