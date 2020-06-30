@@ -21,7 +21,7 @@
 
 /**
  * @file iot_threads_template.c
- * @brief Template implementation of the functions in iot_threads.h
+ * @brief Implimentation of iot threads for Icon Health and fitness.  Note that I would prefer to use the HAL,  However it does not facilitate tasks dying, as such the FreeRTOS API is  used here to implement the iot_threads api.
  */
 
 /* The config header is always included first. */
@@ -29,6 +29,18 @@
 
 /* Platform threads include. */
 #include "platform/iot_threads.h"
+#include <FreeRTOS.h>
+#include <task.h>
+#include <IH-Core.h>
+
+/***********************************************************************************/
+/***************************** Defines and Macros **********************************/
+/***********************************************************************************/
+
+/**
+ * @brief Macro that gets the number of elements supported by the array
+ */
+#define ARRAY_MAX_COUNT(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 /* Configure logs for the functions in this file. */
 #ifdef IOT_LOG_LEVEL_PLATFORM
@@ -44,16 +56,202 @@
 #define LIBRARY_LOG_NAME    ( "THREAD" )
 #include "iot_logging_setup.h"
 
-struct iot_thread_data_s
+/**
+ * @brief Macro for entering a critical section for the iot thread port
+ */
+#define IOT_THREAD_ENTER_CRITICAL()      portENTER_CRITICAL_SAFE(&iot_thread_master_mux);
+
+/**
+ * @brief Macro for exiting a critical section for the iot thread port
+ */
+#define IOT_THREAD_EXIT_CRITICAL()       portEXIT_CRITICAL_SAFE(&iot_thread_master_mux);
+
+/**
+ * @brief Helper macro for stringizing a token
+ */
+#define IOT_THREAD_STRING_VAL_1(X) #X
+
+/**
+ * @brief Macro that stringizes an expanded token
+ */
+#define IOT_THREAD_STRING_VAL(X) IOT_THREAD_STRING_VAL_1(X)
+
+/**
+ * @brief Macro that concatenates two values without expanding them
+ */
+#define IOT_THREAD_CAT_NX(A, B) A ## B
+
+/**
+ * @brief Macro that concatenates two tokens after expanding them
+ */
+#define IOT_THREAD_CAT(A, B) IOT_THREAD_CAT_NX(A, B)
+
+/**
+ * @brief Macro that creates a thread name string based on the value passed into X
+ */
+#define IOT_THREAD_NAME(X) IOT_THREAD_STRING_VAL(IOT_THREAD_CAT(IOT_TASK_, X))
+
+/**
+ * @brief Macro that Helps with initializing table elements
+ */
+#define IOT_THREAD_TABLE_INIT_ELEMENT(X) \
+{ .threadRoutine=NULL, .pArgument = NULL, .priority = 0, .stackSize=0, .name= IOT_THREAD_NAME(X) }
+
+/***********************************************************************************/
+/***************************** Type Defs *******************************************/
+/***********************************************************************************/
+
+struct iot_thread_data_entry_s
 {
-    IotThreadRoutine_t threadRoutine;
-    void *pArgument;
-    int32_t priority;
-    size_t stackSize;
-};
+    IotThreadRoutine_t threadRoutine; //!< The routine to run with the task
+    void *pArgument; //!< The arguments to use with the task
+    int32_t priority; //!< The task's priority
+    size_t stackSize; //!< The task's stack size
+    const char *name; //!< The name of the task
+    TaskHandle_t handle; //!< The handle for the task
+}; //!< Structure that holds data for each task to create and run
 
-/*-----------------------------------------------------------*/
+struct iot_fifo_cleanup_data_s
+{
+    struct iot_thread_data_entry_s *entry;  //!< Pointer to the entry to clean up
+}; //!< Structure used with the cleanup function called by the HAL Fifo task
 
+/***********************************************************************************/
+/***************************** Function Declarations *******************************/
+/***********************************************************************************/
+
+/***********************************************************************************/
+/***************************** Static Variables ************************************/
+/***********************************************************************************/
+
+static struct iot_thread_data_entry_s iot_threads_table[15] =
+{
+    IOT_THREAD_TABLE_INIT_ELEMENT(1),
+    IOT_THREAD_TABLE_INIT_ELEMENT(2),
+    IOT_THREAD_TABLE_INIT_ELEMENT(3),
+    IOT_THREAD_TABLE_INIT_ELEMENT(4),
+    IOT_THREAD_TABLE_INIT_ELEMENT(5),
+    IOT_THREAD_TABLE_INIT_ELEMENT(6),
+    IOT_THREAD_TABLE_INIT_ELEMENT(7),
+    IOT_THREAD_TABLE_INIT_ELEMENT(8),
+    IOT_THREAD_TABLE_INIT_ELEMENT(9),
+    IOT_THREAD_TABLE_INIT_ELEMENT(10),
+    IOT_THREAD_TABLE_INIT_ELEMENT(11),
+    IOT_THREAD_TABLE_INIT_ELEMENT(12),
+    IOT_THREAD_TABLE_INIT_ELEMENT(13),
+    IOT_THREAD_TABLE_INIT_ELEMENT(14),
+    IOT_THREAD_TABLE_INIT_ELEMENT(15)
+}; //!< Table that is used to keep track of the allocated tasks
+
+static portMUX_TYPE iot_thread_master_mux = portMUX_INITIALIZER_UNLOCKED;
+
+/***********************************************************************************/
+/***************************** Function Definitions ********************************/
+/***********************************************************************************/
+
+/**
+ * @brief Function that fetches the next available table entry.  Returns NULL on error
+ * @return Pointer to the table entry, or NULL otherwise
+ */
+static struct iot_thread_data_entry_s *iot_threads_fetch_available_table_entry(void)
+{
+    struct iot_thread_data_entry_s *rv;
+    rv = NULL;
+    for(int i = 0; i < ARRAY_MAX_COUNT(iot_threads_table) && NULL == rv; i++)
+    {
+        if(NULL == iot_threads_table[i].threadRoutine)
+        {
+            rv = &iot_threads_table[i];
+        }
+    }
+    return rv;
+}
+
+/**
+ * @brief Function that cleans up a task as requested.
+ * @param data pointer to data containing a struct iot_fifo_cleanup_data_s
+ * @param data_size should be the sizeof an iot_fifo_cleanup_data_s structure
+ */
+static void iot_thread_cleanup_task(void *data, uint16_t data_size)
+{
+    struct iot_fifo_cleanup_data_s *typed;
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != data);
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, sizeof(struct iot_fifo_cleanup_data_s) == data_size);
+
+    typed = data;
+
+    vTaskDelete(typed->entry->handle);
+
+    IOT_THREAD_ENTER_CRITICAL()
+    typed->entry->threadRoutine = NULL;
+    typed->entry->pArgument = NULL;
+    typed->entry->priority = 0;
+    typed->entry->stackSize = 0;
+    IOT_THREAD_EXIT_CRITICAL()
+
+}
+
+/**
+ * @brief Function that runs the detached IOT Threads
+ * @param table_entry pointer to the table entry in use
+ */
+static void iot_thread_woker(void *table_entry)
+{
+    struct iot_fifo_cleanup_data_s worker_data;
+    worker_data.entry = table_entry;
+
+    //Run the threads routine
+    worker_data.entry->threadRoutine(worker_data.entry->pArgument);
+
+    //The thread returned.  We will need to tell the fifo to clean us up and wait
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, IH_SUCCESS == ih_sched_add(iot_thread_cleanup_task, &worker_data, sizeof(worker_data)));
+
+    //Spin Sleep so that the fifo can kill this task
+    while(1)
+    {
+        vTaskDelay(200);
+    }
+}
+
+
+/**
+ * @brief Create a new detached thread, i.e. a thread that cleans up after itself.
+ *
+ * This function creates a new thread. Threads created by this function exit
+ * upon returning from the thread routine. Any resources taken must be freed
+ * by the exiting thread.
+ *
+ * @param[in] threadRoutine The function this thread should run.
+ * @param[in] pArgument The argument passed to `threadRoutine`.
+ * @param[in] priority Represents the priority of the new thread, as defined by
+ * the system. The value #IOT_THREAD_DEFAULT_PRIORITY (i.e. `0`) must be used to
+ * represent the system default for thread priority. #IOT_THREAD_IGNORE_PRIORITY
+ * should be passed if this parameter is not relevant for the port implementation.
+ * @param[in] stackSize Represents the stack size of the new thread, as defined
+ * by the system. The value #IOT_THREAD_DEFAULT_STACK_SIZE (i.e. `0`) must be used
+ * to represent the system default for stack size. #IOT_THREAD_IGNORE_STACK_SIZE
+ * should be passed if this parameter is not relevant for the port implementation.
+ *
+ * @return `true` if the new thread was successfully created; `false` otherwise.
+ *
+ * @code{c}
+ * // Thread routine.
+ * void threadRoutine( void * pArgument );
+ *
+ * // Run threadRoutine in a detached thread, using default priority and stack size.
+ * if( Iot_CreateDetachedThread( threadRoutine,
+ *                               NULL,
+ *                               IOT_THREAD_DEFAULT_PRIORITY,
+ *                               IOT_THREAD_DEFAULT_STACK_SIZE ) == true )
+ * {
+ *     // Success
+ * }
+ * else
+ * {
+ *     // Failure, no thread was created.
+ * }
+ * @endcode
+ */
 bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
                               void *pArgument,
                               int32_t priority,
@@ -62,7 +260,40 @@ bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
     /* Implement this function as specified here:
      * https://docs.aws.amazon.com/freertos/latest/lib-ref/c-sdk/platform/platform_threads_function_createdetachedthread.html
      */
-    return false;
+    struct iot_thread_data_entry_s *table_entry;
+
+    if(NULL == threadRoutine || 150 > stackSize || tskIDLE_PRIORITY > priority ||  configMAX_PRIORITIES < priority)
+    {
+        return false;
+    }
+
+    IOT_THREAD_ENTER_CRITICAL()
+    table_entry = iot_threads_fetch_available_table_entry();
+    if(NULL != table_entry)
+    {
+        table_entry->threadRoutine = threadRoutine;
+        table_entry->pArgument = pArgument;
+        table_entry->priority = priority;
+        table_entry->stackSize = stackSize;
+    }
+    IOT_THREAD_EXIT_CRITICAL()
+    if(NULL == table_entry)
+    {
+        return false;
+    }
+
+    if(pdPASS != xTaskCreate(iot_thread_woker, table_entry->name, table_entry->stackSize, table_entry, table_entry->priority, &table_entry->handle))
+    {
+        IOT_THREAD_ENTER_CRITICAL()
+        table_entry->threadRoutine = NULL;
+        table_entry->pArgument = NULL;
+        table_entry->priority = 0;
+        table_entry->stackSize = 0;
+        IOT_THREAD_EXIT_CRITICAL()
+        return false;
+    }
+
+    return true;
 }
 
 /*-----------------------------------------------------------*/
