@@ -88,12 +88,14 @@ static void init_as_needed(void)
  */
 void *iot_port_malloc(unsigned int size)
 {
+
     void *rv;
     rv = NULL;
     IOT_MEM_ENTER_CRITICAL()
     init_as_needed();
     rv = ih_mempool_malloc(mem_helper.mempool, size);
     IOT_MEM_EXIT_CRITICAL()
+      
     return rv;
 }
 
