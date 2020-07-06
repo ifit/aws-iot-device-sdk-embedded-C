@@ -11,8 +11,8 @@ config AWS_SDK_ENABLED
 
 config ICON_AWS_PORT_MEMPOOL_SIZE
     int "AWS Mempool Size"
-    default 1024
-    range 1024 4096
+    default 4096
+    range 1024 16384
     depends on AWS_SDK_ENABLED
     help 
         The size of the mempool in bytes used by the amazon AWS
@@ -24,5 +24,14 @@ config ICON_AWS_PORT_MEMPOOL_MAX_CHUNKS
     depends on AWS_SDK_ENABLED
     help 
         The max number of chunks that can be allocated by AWS malloc
+
+    
+config DEBUG_AWS_PORT_LAYER
+    bool "Debug Port Layer"
+    default n
+    depends on AWS_SDK_ENABLED
+    help 
+         Turn on debug messages for the AWS Port Layer
+
 
 endmenu

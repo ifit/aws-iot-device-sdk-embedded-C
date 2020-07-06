@@ -27,15 +27,20 @@
 #ifndef IOT_PLATFORM_TYPES_TEMPLATE_H_
 #define IOT_PLATFORM_TYPES_TEMPLATE_H_
 
+typedef struct iot_sys_gen_pointer_s
+{
+    void *pointer;
+} iot_sys_gen_pointer_s;
+
 /**
  * @brief Set this to the target system's mutex type.
  */
-typedef void *_IotSystemMutex_t;
+typedef iot_sys_gen_pointer_s _IotSystemMutex_t;
 
 /**
  * @brief Set this to the target system's semaphore type.
  */
-typedef void *_IotSystemSemaphore_t;
+typedef iot_sys_gen_pointer_s _IotSystemSemaphore_t;
 
 /**
  * @brief Set this to the target system's timer type.
