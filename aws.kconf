@@ -7,7 +7,7 @@ config AWS_SDK_ENABLED
     depends on IH_ESP32
     select IH_TIME_USE_MS
     help 
-        Enable or disable the AWS SDK
+        Enable or disable the AWS SDK        
 
 config ICON_AWS_PORT_MEMPOOL_SIZE
     int "AWS Mempool Size"
