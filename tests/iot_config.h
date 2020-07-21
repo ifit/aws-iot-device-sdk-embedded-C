@@ -24,6 +24,8 @@
 #ifndef IOT_CONFIG_H_
 #define IOT_CONFIG_H_
 
+#error This file should not be used
+
 /* The build system will choose the appropriate system types file for the platform
  * layer based on the host operating system. */
 #include IOT_SYSTEM_TYPES_FILE

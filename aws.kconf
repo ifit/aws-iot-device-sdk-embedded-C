@@ -11,7 +11,7 @@ config AWS_SDK_ENABLED
 
 config ICON_AWS_PORT_MEMPOOL_SIZE
     int "AWS Mempool Size"
-    default 4096
+    default 8192
     range 1024 16384
     depends on AWS_SDK_ENABLED
     help 
@@ -33,5 +33,49 @@ config DEBUG_AWS_PORT_LAYER
     help 
          Turn on debug messages for the AWS Port Layer
 
-
+config AWS_API_ENDPOINT
+	string "AWS API Endpoint"
+	default "afrxa46vfj5mj-ats.iot.us-east-2.amazonaws.com"
+	depends on AWS_SDK_ENABLED
+	help
+		The AWS Endpoint to use with this device
+		
+config AWS_API_PORT
+	int "AWS API Port Number"
+	default 443
+	range 1 9999
+	depends on AWS_SDK_ENABLED
+	help
+	    The Port to use with the AWS connections
+	    
+config AWS_TASK_POOL_TASK_SIZE
+   int "AWS Task Pool Task Size"
+   range 1024 4096
+   default 3072
+   depends on AWS_SDK_ENABLED
+   help
+       The size allocated for each task in the AWS Task pool
+	    
+config AWS_ROOT_CERT
+	string "AWS Root Certificate Filename"
+	default "AmazonRootCA1.pem"
+	depends on AWS_SDK_ENABLED
+	help
+        The root certificate to use with AWS
+        
+config AWS_PRIVATE_KEY
+	string "AWS Device Private Key"
+	default "2f071dcd75-private.pem.key"
+	depends on AWS_SDK_ENABLED
+	help
+	    The devices private key that it uses with AWS
+	    
+config AWS_DEVICE_CERTIFICATE
+	string "AWS Device Certificate"
+	default "2f071dcd75-certificate.pem.crt"
+	depends on AWS_SDK_ENABLED
+	help
+	    The devices certificate for use with Amazon AWS
+	
+	    
 endmenu
