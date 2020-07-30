@@ -45,21 +45,21 @@ typedef iot_sys_gen_pointer_s _IotSystemSemaphore_t;
 /**
  * @brief Set this to the target system's timer type.
  */
-typedef void *_IotSystemTimer_t;
+typedef void *_IotSystemTimer_t;  //It looks like this is not used anywhere.  Keeping till I see it removed from Amazons ports
 
 /**
  * @brief The format for remote server host and port on this system.
  */
-typedef void *_IotNetworkServerInfo_t;
+typedef struct IotNetworkServerInfo * _IotNetworkServerInfo_t;
 
 /**
  * @brief The format for network credentials on this system.
  */
-typedef void *_IotNetworkCredentials_t;
+typedef struct IotNetworkCredentials * _IotNetworkCredentials_t;
 
 /**
  * @brief The handle of a network connection on this system.
  */
-typedef void *_IotNetworkConnection_t;
+typedef struct _networkConnection * _IotNetworkConnection_t;
 
 #endif /* ifndef IOT_PLATFORM_TYPES_TEMPLATE_H_ */
