@@ -223,6 +223,8 @@ static bool _incomingPacketValid( uint8_t packetType )
 {
     bool status = true;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     /* Check packet type. Mask out lower bits to ignore flags. */
     switch( packetType & 0xf0U )
     {
@@ -252,6 +254,8 @@ static IotMqttError_t _allocateAndReceivePacket( IotNetworkConnection_t pNetwork
 {
     IotMqttError_t status = IOT_MQTT_SUCCESS;
     size_t dataBytesRead = 0;
+
+    IotLogDebug("%s Running", __FUNCTION__);
 
     IotMqtt_Assert( pMqttConnection != NULL );
     IotMqtt_Assert( pIncomingPacket != NULL );
@@ -302,6 +306,8 @@ static IotMqttError_t _getIncomingPacket( IotNetworkConnection_t pNetworkConnect
                                           _mqttPacket_t * pIncomingPacket )
 {
     IotMqttError_t status = IOT_MQTT_SUCCESS;
+
+    IotLogDebug("%s Running", __FUNCTION__);
 
     /* No buffer for remaining data should be allocated. */
     IotMqtt_Assert( pIncomingPacket->pRemainingData == NULL );
@@ -363,6 +369,8 @@ static IotMqttError_t _deserializeAck( _mqttConnection_t * pMqttConnection,
     IotMqttError_t status = IOT_MQTT_STATUS_PENDING;
     _mqttOperation_t * pOperation = NULL;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     status = _deserializer( pIncomingPacket );
 
     pOperation = _IotMqtt_FindOperation( pMqttConnection,
@@ -386,6 +394,8 @@ static IotMqttError_t _deserializePublishPacket( _mqttConnection_t * pMqttConnec
     IotMqttError_t status = IOT_MQTT_STATUS_PENDING;
     _mqttOperation_t * pOperation = NULL;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     /* Allocate memory to handle the incoming PUBLISH. */
     pOperation = IotMqtt_MallocOperation( sizeof( _mqttOperation_t ) );
 
@@ -403,6 +413,7 @@ static IotMqttError_t _deserializePublishPacket( _mqttConnection_t * pMqttConnec
         pIncomingPacket->u.pIncomingPublish = pOperation;
         /* Deserialize incoming PUBLISH. */
         status = _getPublishDeserializer( pMqttConnection->pSerializer )( pIncomingPacket );
+        IotLogDebug("_getPublishDeserializer returned %u", status);
     }
 
     if( status == IOT_MQTT_SUCCESS )
@@ -455,6 +466,7 @@ static IotMqttError_t _deserializePublishPacket( _mqttConnection_t * pMqttConnec
     /* Free PUBLISH operation on error. */
     if( ( status != IOT_MQTT_SUCCESS ) && ( pOperation != NULL ) )
     {
+        IotLogDebug("PUBLISH Operation Failed");
         /* Check ownership of the received MQTT packet. */
         if( pOperation->u.publish.pReceivedData != NULL )
         {
@@ -487,6 +499,8 @@ static IotMqttError_t _deserializePingResp( _mqttConnection_t * pMqttConnection,
 {
     IotMqttError_t status = IOT_MQTT_STATUS_PENDING;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     status = _getPingrespDeserializer( pMqttConnection->pSerializer )( pIncomingPacket );
 
     if( status == IOT_MQTT_SUCCESS )
@@ -514,6 +528,8 @@ static IotMqttError_t _deserializeIncomingPacket( _mqttConnection_t * pMqttConne
                                                   _mqttPacket_t * pIncomingPacket )
 {
     IotMqttError_t status = IOT_MQTT_STATUS_PENDING;
+
+    IotLogDebug("%s Running", __FUNCTION__);
 
     /* A buffer for remaining data must be allocated if remaining length is not 0. */
     IotMqtt_Assert( ( pIncomingPacket->remainingLength > 0U ) ==
@@ -629,6 +645,8 @@ static void _sendPuback( _mqttConnection_t * pMqttConnection,
     IotMqttError_t status = IOT_MQTT_STATUS_PENDING;
     _mqttOperation_t * pPubackOperation = NULL;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     IotLogDebug( "(MQTT connection %p) Sending PUBACK for received PUBLISH %hu.",
                  pMqttConnection,
                  packetIdentifier );
@@ -682,6 +700,8 @@ static void _flushPacket( IotNetworkConnection_t pNetworkConnection,
     size_t bytesFlushed = 0;
     uint8_t receivedByte = 0;
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     for( bytesFlushed = 0; bytesFlushed < length; bytesFlushed++ )
     {
         ( void ) _IotMqtt_GetNextByte( pNetworkConnection,
@@ -699,6 +719,8 @@ bool _IotMqtt_GetNextByte( IotNetworkConnection_t pNetworkConnection,
     bool status = false;
     uint8_t incomingByte = 0;
     size_t bytesReceived = 0;
+
+    IotLogDebug("%s Running", __FUNCTION__);
 
     /* Attempt to read 1 byte. */
     bytesReceived = pNetworkInterface->receive( pNetworkConnection,
@@ -730,6 +752,8 @@ void _IotMqtt_CloseNetworkConnection( IotMqttDisconnectReason_t disconnectReason
     IotMqttCallbackParam_t callbackParam = { .u.message = { 0 } };
     IotNetworkConnection_t pNetworkConnection = NULL;
     void * pDisconnectCallbackContext = NULL;
+
+    IotLogDebug("%s Running", __FUNCTION__);
 
     /* Disconnect callback function. */
     void ( * disconnectCallback )( void * pContext,
@@ -831,6 +855,8 @@ void IotMqtt_ReceiveCallback( IotNetworkConnection_t pNetworkConnection,
     IotMqttError_t status = IOT_MQTT_SUCCESS;
     _mqttPacket_t incomingPacket = { .u.pMqttConnection = NULL };
 
+    IotLogDebug("%s Running", __FUNCTION__);
+
     /* Cast context to correct type. */
     _mqttConnection_t * pMqttConnection = ( _mqttConnection_t * ) pReceiveContext;
 
@@ -839,15 +865,18 @@ void IotMqtt_ReceiveCallback( IotNetworkConnection_t pNetworkConnection,
                                  pMqttConnection,
                                  &incomingPacket );
 
+    IotLogDebug("_getIncomingPacket returned %u", status);
     if( status == IOT_MQTT_SUCCESS )
     {
         /* Deserialize the received packet. */
         status = _deserializeIncomingPacket( pMqttConnection,
                                              &incomingPacket );
 
+        IotLogDebug("_deserializeIncomingPacket returned %u", status);
         /* Free any buffers allocated for the MQTT packet. */
         if( incomingPacket.pRemainingData != NULL )
         {
+            IotLogDebug("pRemainingData is not NULL");
             IotMqtt_FreeMessage( incomingPacket.pRemainingData );
         }
     }

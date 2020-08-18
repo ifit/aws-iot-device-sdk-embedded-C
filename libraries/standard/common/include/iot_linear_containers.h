@@ -36,6 +36,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <iot_logging.h>
+
+
 /**
  * @defgroup linear_containers_datatypes_listqueue List and queue
  * @brief Structures that represent a list or queue.
@@ -200,6 +203,19 @@ typedef IotLink_t   IotDeQueue_t;
  * @functionpage{IotDeQueue_RemoveAllMatches,linear_containers,queue_removeallmatches}
  */
 
+#ifdef AWS_IOT_DEBUG_IOT_LINK_LIST
+#ifdef IOT_LOGGING_H_
+#define LOG_MESSAGE(...) \
+		IotLog_Generic( IOT_LOG_DEBUG,        \
+		                                "Container",         \
+										IOT_LOG_DEBUG,             \
+										NULL,               \
+		                                __VA_ARGS__ )
+#endif //IOT_LOGGING_H_
+#else
+#define LOG_MESSAGE(...)
+#endif //AWS_IOT_DEBUG_IOT_LINK_LIST
+
 /**
  * @brief Check if an #IotLink_t is linked in a list or queue.
  *
@@ -358,6 +374,8 @@ static inline void IotListDouble_InsertHead( IotListDouble_t * const pList,
     /* This function must not be called with NULL parameters. */
     IotContainers_Assert( pList != NULL );
     IotContainers_Assert( pLink != NULL );
+
+    LOG_MESSAGE("%s : %p", __FUNCTION__, pList);
 
     /* Save current list head. */
     IotLink_t * pHead = pList->pNext;
@@ -636,16 +654,24 @@ static inline IotLink_t * IotListDouble_FindFirstMatch( const IotListDouble_t * 
         pCurrent = pList->pNext;
     }
 
+    if(pCurrent == pList)
+    {
+    	//PCurrent starts invalid
+    	LOG_MESSAGE("###### Initial state already invalid %p", pList);
+    }
+
     /* Iterate through the list to search for matches. */
     while( pCurrent != pList )
     {
         /* Call isMatch if provided. Otherwise, compare pointers. */
         if( isMatch != NULL )
         {
+            LOG_MESSAGE("###### Calling %p", isMatch);
             matchFound = isMatch( pCurrent, pMatch );
         }
         else
         {
+            LOG_MESSAGE("###### Checking pointers");
             matchFound = ( pCurrent == pMatch );
         }
 

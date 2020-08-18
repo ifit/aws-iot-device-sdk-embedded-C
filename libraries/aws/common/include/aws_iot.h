@@ -192,6 +192,8 @@ typedef struct AwsIotThingName
 {
     const char * pThingName; /**< @brief Thing Name to compare. */
     size_t thingNameLength;  /**< @brief Length of `pThingName`. */
+    const char * pShadowName;
+    size_t shadowNameLength;
 } AwsIotThingName_t;
 
 /**
@@ -256,6 +258,13 @@ bool AwsIot_ParseThingName( const char * pTopicName,
                             uint16_t topicNameLength,
                             const char ** pThingName,
                             size_t * pThingNameLength );
+
+bool AwsIot_ParseShadowName(const char * pTopicName,
+        uint16_t topicNameLength,
+		const char * pThingName,
+		size_t thingNameLength,
+        const char ** pShadowName,
+        size_t * pShadowNameLength );
 
 /**
  * @brief Parse the operation status (accepted or rejected) from an MQTT topic.

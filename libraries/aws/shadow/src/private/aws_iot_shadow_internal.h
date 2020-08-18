@@ -316,6 +316,9 @@ typedef struct _shadowSubscription
      */
     char * pTopicBuffer;
 
+    size_t shadowNameLength; /**< @brief Length of the Shadow Name. */
+    char pShadowName[25]; /**< @brief Shadow name associated with thsi subscriptions object */
+
     size_t thingNameLength; /**< @brief Length of Thing Name. */
     char pThingName[];      /**< @brief Thing Name associated with this subscriptions object. */
 } _shadowSubscription_t;
@@ -432,6 +435,8 @@ void _AwsIotShadow_DestroyOperation( void * pData );
 AwsIotShadowError_t _AwsIotShadow_GenerateShadowTopic( _shadowOperationType_t type,
                                                        const char * pThingName,
                                                        size_t thingNameLength,
+													   const char * pShadowName,
+													   size_t shadowNameLength,
                                                        char ** pTopicBuffer,
                                                        uint16_t * pOperationTopicLength );
 
@@ -451,6 +456,8 @@ AwsIotShadowError_t _AwsIotShadow_GenerateShadowTopic( _shadowOperationType_t ty
 AwsIotShadowError_t _AwsIotShadow_ProcessOperation( IotMqttConnection_t mqttConnection,
                                                     const char * pThingName,
                                                     size_t thingNameLength,
+													const char * pShadowName,
+													size_t shadowNameLength,
                                                     _shadowOperation_t * pOperation,
                                                     const AwsIotShadowDocumentInfo_t * pDocumentInfo );
 
@@ -493,6 +500,8 @@ AwsIotShadowCallbackType_t _AwsIotShadow_IntToShadowCallbackType( uint32_t n );
  */
 _shadowSubscription_t * _AwsIotShadow_FindSubscription( const char * pThingName,
                                                         size_t thingNameLength,
+                                                        const char * pShadowName,
+                                                        size_t shadowNameLength,
                                                         bool createIfNotFound );
 
 /**

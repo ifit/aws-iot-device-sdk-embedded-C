@@ -43,20 +43,6 @@
  */
 #define ARRAY_MAX_COUNT(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
-/* Configure logs for the functions in this file. */
-#ifdef IOT_LOG_LEVEL_PLATFORM
-#define LIBRARY_LOG_LEVEL        IOT_LOG_LEVEL_PLATFORM
-#else
-#ifdef IOT_LOG_LEVEL_GLOBAL
-#define LIBRARY_LOG_LEVEL    IOT_LOG_LEVEL_GLOBAL
-#else
-#define LIBRARY_LOG_LEVEL    IOT_LOG_NONE
-#endif
-#endif
-
-#define LIBRARY_LOG_NAME    ( "THREAD" )
-#include "iot_logging_setup.h"
-
 /**
  * @brief Macro for entering a critical section for the iot thread port
  */
@@ -205,7 +191,8 @@ static void iot_thread_cleanup_task(void *data, uint16_t data_size)
     vTaskDelete(typed->entry->handle);
 
     IOT_THREAD_ENTER_CRITICAL()
-    iot_port_free(typed->entry->Stack);
+    DEBUG_MSG("\r\n<<<<<<<<<<<<<< Freeing Memory at %p\r\n\r\n", typed->entry->Stack);
+    iot_port_taskpool_free(typed->entry->Stack);
     typed->entry->threadRoutine = NULL;
     typed->entry->pArgument = NULL;
     typed->entry->priority = 0;
@@ -307,7 +294,7 @@ bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
         return false;
     }
 
-    table_entry->Stack = iot_port_malloc(stackSize);
+    table_entry->Stack = iot_port_taskpool_malloc(stackSize);
     if(NULL == table_entry->Stack)
     {
         IOT_THREAD_ENTER_CRITICAL()
@@ -316,9 +303,10 @@ bool Iot_CreateDetachedThread(IotThreadRoutine_t threadRoutine,
         table_entry->priority = 0;
         table_entry->stackSize = 0;
         IOT_THREAD_EXIT_CRITICAL()
-        DEBUG_MSG("Malloc Failed\r\n");
+        DEBUG_MSG("Malloc Failed: %u\r\n", stackSize);
         return false;
     }
+    DEBUG_MSG("\r\n>>>>>>>>>>>>>> Malloc Suceeded: %p %u\r\n\r\n", table_entry->Stack, stackSize);
 
     table_entry->handle = xTaskCreateStatic(iot_thread_woker, table_entry->name, table_entry->stackSize, table_entry, table_entry->priority,
                                             table_entry->Stack, &table_entry->TaskBuffer);
@@ -378,6 +366,7 @@ bool IotMutex_Create(IotMutex_t *pNewMutex, bool recursive)
     if(NULL == new_mutex)
     {
         //Failed to allocate data for the mutex
+        DEBUG_MSG("---Not enough memory to create Mutex\r\n");
         return false;
     }
 
@@ -469,6 +458,7 @@ void IotMutex_Lock(IotMutex_t *pMutex)
     {
         IH_ASSERT(IH_ERR_LEVEL_ERROR, pdTRUE == xSemaphoreTake(typed->handle, portMAX_DELAY));
     }
+    DEBUG_MSG("-m-m-m IOT Mutex at %p Locked\r\n", typed);
 }
 
 

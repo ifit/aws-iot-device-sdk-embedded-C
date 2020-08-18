@@ -596,6 +596,10 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
         IOT_SET_AND_GOTO_CLEANUP( IOT_NETWORK_FAILURE );
     }
 
+    IotLogInfo("Read Root CA %s", pMbedtlsCredentials->pRootCa);
+    IotLogInfo("Read Client Cert %s", pMbedtlsCredentials->pClientCert);
+    IotLogInfo("Read Private Key %s\r\n", pMbedtlsCredentials->pPrivateKey);
+
     /* Set up ALPN if requested. */
     if( pMbedtlsCredentials->pAlpnProtos != NULL )
     {
@@ -661,6 +665,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
         }
     }
 
+    IotLogInfo("Initialize the mbed TLS secured connection context.");  
     /* Initialize the mbed TLS secured connection context. */
     mbedtlsError = mbedtls_ssl_setup( &( pConnection->ssl.context ),
                                       &( pConnection->ssl.config ) );
@@ -672,6 +677,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
         IOT_SET_AND_GOTO_CLEANUP( IOT_NETWORK_FAILURE );
     }
 
+    IotLogInfo("Set the underlying IO for the TLS connection.");
     /* Set the underlying IO for the TLS connection. */
     mbedtls_ssl_set_bio( &( pConnection->ssl.context ),
                          &( pConnection->networkContext ),
@@ -682,6 +688,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
     /* Enable SNI if requested. */
     if( pMbedtlsCredentials->disableSni == false )
     {
+        IotLogInfo("Enable SNI if requested.");
         mbedtlsError = mbedtls_ssl_set_hostname( &( pConnection->ssl.context ),
                                                  pServerName );
 
@@ -693,6 +700,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
         }
     }
 
+    IotLogInfo("Perform the TLS handshake.");
     /* Perform the TLS handshake. */
     do
     {
@@ -707,6 +715,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
         IOT_SET_AND_GOTO_CLEANUP( IOT_NETWORK_FAILURE );
     }
 
+    IotLogInfo("Check result of certificate verification.");
     /* Check result of certificate verification. */
     verifyResult = mbedtls_ssl_get_verify_result( &( pConnection->ssl.context ) );
 
@@ -725,6 +734,7 @@ static IotNetworkError_t _tlsSetup( _networkConnection_t * pConnection,
     {
         if( sslContextInitialized == true )
         {
+            IotLogInfo("Freeing the ssl context");
             _sslContextFree( pConnection );
         }
     }
@@ -756,6 +766,8 @@ IotNetworkError_t IotNetworkMbedtls_Init( void )
 
     /* Clear the counter of receive threads. */
     _receiveThreadCount = 0;
+
+    IotLogInfo( "%s: Network library initializeding", __FUNCTION__ );
 
     /* Set the mutex functions for mbed TLS thread safety. */
     mbedtls_threading_set_alt( _mbedtlsMutexInit,

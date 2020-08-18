@@ -55,6 +55,14 @@ config AWS_TASK_POOL_TASK_SIZE
    depends on AWS_SDK_ENABLED
    help
        The size allocated for each task in the AWS Task pool
+       
+config AWS_TASK_POOL_MAX_TASKS
+	int "AWS Task Pool max Tasks"
+	range 1 10
+	default 3
+	depends on AWS_SDK_ENABLED
+	help
+		The maximum number of tasks in the AWS taskpool
 	    
 config AWS_ROOT_CERT
 	string "AWS Root Certificate Filename"

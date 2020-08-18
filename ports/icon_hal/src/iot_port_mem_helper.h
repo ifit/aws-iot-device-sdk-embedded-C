@@ -22,4 +22,17 @@ void *iot_port_malloc(unsigned int size);
  */
 void iot_port_free(void *ptr);
 
+/**
+ * @brief Function that allocates data for taskpool tasks
+ * @param size how many bytes to allocate
+ * @return returns NULL on error
+ */
+void *iot_port_taskpool_malloc(unsigned int size);
+
+/**
+ * @brief Function that frees previously allocated data for taskpool tasks
+ * @param ptr the ptr to free
+ */
+void iot_port_taskpool_free(void *ptr);
+
 #endif /* AWS_IOT_PORTS_ICON_HAL_SRC_IOT_PORT_MEM_HELPER_H_ */

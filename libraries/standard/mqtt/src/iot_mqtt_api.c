@@ -1001,6 +1001,7 @@ static IotMqttError_t _waitForOperation( IotMqttOperation_t operation,
                 IotMqtt_OperationType( operation->u.operation.type ),
                 operation,
                 IotMqtt_strerror( status ) );
+    IotLogInfo( "timeoutMs: %u", timeoutMs);
 
     return status;
 }

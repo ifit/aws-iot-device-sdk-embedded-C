@@ -1466,6 +1466,7 @@ static IotTaskPoolError_t _scheduleInternal( _taskPool_t * const pTaskPool,
 
     if( activeThreads <= pTaskPool->activeJobs )
     {
+        IotLogInfo("activeThreads: %u, pTaskPool->activeJobs %u", activeThreads, pTaskPool->activeJobs);
         /* If the job scheduling is tagged as high priority, then we must grow the task pool,
          * no matter how many threads are active already. */
         if( ( flags & IOT_TASKPOOL_JOB_HIGH_PRIORITY ) == IOT_TASKPOOL_JOB_HIGH_PRIORITY )
@@ -1487,7 +1488,7 @@ static IotTaskPoolError_t _scheduleInternal( _taskPool_t * const pTaskPool,
 
         if( ( mustGrow == true ) || ( shouldGrow == true ) )
         {
-            IotLogInfo( "Growing a Task pool with a new worker thread..." );
+            IotLogInfo( "Growing a Task pool with a new worker thread... %p",  pTaskPool);
 
             if( Iot_CreateDetachedThread( _taskPoolWorker,
                                           pTaskPool,
@@ -1506,6 +1507,7 @@ static IotTaskPoolError_t _scheduleInternal( _taskPool_t * const pTaskPool,
                 /* Failure to create a worker thread for a high priority job is considered a failure. */
                 if( mustGrow )
                 {
+                    IotLogError("Failed to force creation of High Priority Job");
                     TASKPOOL_SET_AND_GOTO_CLEANUP( IOT_TASKPOOL_NO_MEMORY );
                 }
             }

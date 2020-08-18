@@ -262,6 +262,9 @@ typedef struct IotTaskPoolInfo
  *
  */
 /* @[define_taskpool_initializers] */
+
+#define IOT_TASKPOOL_INTO_INITIALIZER_ICON { .minThreads = (1), .maxThreads = IOT_THREAD_DEFAULT_MAX_POOL_SIZE, .stackSize = IOT_THREAD_DEFAULT_STACK_SIZE, .priority = IOT_THREAD_DEFAULT_PRIORITY }
+
 /** @brief Initializer for a small #IotTaskPoolInfo_t. */
 #define IOT_TASKPOOL_INFO_INITIALIZER_SMALL     { .minThreads = 1, .maxThreads = 1, .stackSize = IOT_THREAD_DEFAULT_STACK_SIZE, .priority = IOT_THREAD_DEFAULT_PRIORITY }
 /** @brief Initializer for a medium #IotTaskPoolInfo_t. */
