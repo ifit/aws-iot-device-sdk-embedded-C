@@ -74,6 +74,7 @@ static bool _shadowSubscription_match( const IotLink_t * pSubscriptionLink,
 {
     bool match = false;
 
+    IotLogDebug("%s Running\r\n", __FUNCTION__);
     /* Because this function is called from a container function, the given link
      * must never be NULL. */
     AwsIotShadow_Assert( pSubscriptionLink != NULL );
@@ -83,13 +84,44 @@ static bool _shadowSubscription_match( const IotLink_t * pSubscriptionLink,
                                                                      link );
     const AwsIotThingName_t * pThingName = ( AwsIotThingName_t * ) pMatch;
 
-    if( pThingName->thingNameLength == pSubscription->thingNameLength )
+    //Make sure the thing name and the shadow names match
+    if( (pThingName->thingNameLength == pSubscription->thingNameLength) && (pThingName->shadowNameLength == pSubscription->shadowNameLength))
     {
-        /* Check for matching Thing Names. */
-        match = ( strncmp( pThingName->pThingName,
-                           pSubscription->pThingName,
-                           pThingName->thingNameLength ) == 0 );
+        int thingResult;
+        int shadowResult;
+
+        thingResult = strncmp( pThingName->pThingName, pSubscription->pThingName, pThingName->thingNameLength);
+        shadowResult = strncmp(pThingName->pShadowName, pSubscription->pShadowName, pThingName->shadowNameLength);
+
+    	if( (0 == thingResult) && (0 == shadowResult))
+    	{
+    		match = true;
+    	}
+        else
+        {
+            if(0 != thingResult)
+            {
+                IotLogDebug("%.*s != %.*s", pThingName->thingNameLength, pThingName->pThingName, pThingName->thingNameLength, pSubscription->pThingName);
+            }
+            if(0 != shadowResult)
+            {
+                IotLogDebug("%.*s != %.*s", pThingName->shadowNameLength, pThingName->pShadowName, pThingName->shadowNameLength, pSubscription->pShadowName);
+            }
+        }
+        
     }
+    else
+    {
+        if(pThingName->thingNameLength != pSubscription->thingNameLength)
+        {
+            IotLogDebug("\t%u (pThingName->thingNameLength) != %u (pSubscription->thingNameLength)", pThingName->thingNameLength, pSubscription->thingNameLength);
+        }
+        if(pThingName->shadowNameLength != pSubscription->shadowNameLength)
+        {
+             IotLogDebug("\t%u (pThingName->shadowNameLength) != %u (pSubscription->shadowNameLength)", pThingName->shadowNameLength, pSubscription->shadowNameLength);
+        }
+    }
+    
 
     return match;
 }
@@ -98,6 +130,8 @@ static bool _shadowSubscription_match( const IotLink_t * pSubscriptionLink,
 
 _shadowSubscription_t * _AwsIotShadow_FindSubscription( const char * pThingName,
                                                         size_t thingNameLength,
+														const char * pShadowName,
+														size_t shadowNameLength,
                                                         bool createIfNotFound )
 {
     _shadowSubscription_t * pSubscription = NULL;
@@ -106,6 +140,8 @@ _shadowSubscription_t * _AwsIotShadow_FindSubscription( const char * pThingName,
 
     thingName.pThingName = pThingName;
     thingName.thingNameLength = thingNameLength;
+    thingName.pShadowName = pShadowName;
+    thingName.shadowNameLength = shadowNameLength;
 
     /* Search the list for an existing subscription for Thing Name. */
     pSubscriptionLink = IotListDouble_FindFirstMatch( &( _AwsIotShadowSubscriptions ),
@@ -116,19 +152,33 @@ _shadowSubscription_t * _AwsIotShadow_FindSubscription( const char * pThingName,
     /* Check if a subscription was found. */
     if( pSubscriptionLink == NULL )
     {
+    	IotLogDebug("%s Subscription not found", __FUNCTION__);
         if( createIfNotFound == true )
         {
+        	IotLogDebug("%s Creating new subscription", __FUNCTION__);
             /* No subscription found. Allocate a new subscription. */
             pSubscription = AwsIotShadow_MallocSubscription( sizeof( _shadowSubscription_t ) + thingNameLength );
 
             if( pSubscription != NULL )
             {
+            	IotLogDebug("%s Clearing the new Subscription", __FUNCTION__);
                 /* Clear the new subscription. */
                 ( void ) memset( pSubscription, 0x00, sizeof( _shadowSubscription_t ) + thingNameLength );
+
+                //Save the shadow name
+                AwsIotShadow_Assert(NULL != pShadowName);
+                AwsIotShadow_Assert(0 != shadowNameLength);
+                AwsIotShadow_Assert(25 >= shadowNameLength);
+                pSubscription->shadowNameLength = shadowNameLength;
+                IotLogDebug("%s Copying the Shadow Name", __FUNCTION__);
+				( void ) memcpy( pSubscription->pShadowName, pShadowName, shadowNameLength);
+
+				IotLogDebug("Shadow name set to %.*s", pSubscription->pShadowName, pSubscription->pShadowName);
 
                 /* Set the Thing Name length and copy the Thing Name into the new subscription. */
                 pSubscription->thingNameLength = thingNameLength;
                 ( void ) memcpy( pSubscription->pThingName, pThingName, thingNameLength );
+
 
                 /* Add the new subscription to the subscription list. */
                 IotListDouble_InsertHead( &( _AwsIotShadowSubscriptions ),
@@ -155,6 +205,11 @@ _shadowSubscription_t * _AwsIotShadow_FindSubscription( const char * pThingName,
         pSubscription = IotLink_Container( _shadowSubscription_t, pSubscriptionLink, link );
     }
 
+    if(NULL != pSubscription)
+    {
+    	IotLogDebug("Checking the subscription.");
+    	AwsIotShadow_Assert(0 != pSubscription->shadowNameLength);
+    }
     return pSubscription;
 }
 
@@ -375,6 +430,8 @@ void _AwsIotShadow_DecrementReferences( _shadowOperation_t * pOperation,
             ( void ) _AwsIotShadow_GenerateShadowTopic( ( _shadowOperationType_t ) type,
                                                         pSubscription->pThingName,
                                                         pSubscription->thingNameLength,
+														pSubscription->pShadowName,
+														pSubscription->shadowNameLength,
                                                         &( pSubscription->pTopicBuffer ),
                                                         &operationTopicLength );
 
@@ -407,6 +464,8 @@ void _AwsIotShadow_DecrementReferences( _shadowOperation_t * pOperation,
 AwsIotShadowError_t AwsIotShadow_RemovePersistentSubscriptions( IotMqttConnection_t mqttConnection,
                                                                 const char * pThingName,
                                                                 size_t thingNameLength,
+                                                                const char * pShadowName,
+                                                                size_t shadowNameLength,
                                                                 uint32_t flags )
 {
     uint32_t i = 0;
@@ -462,6 +521,8 @@ AwsIotShadowError_t AwsIotShadow_RemovePersistentSubscriptions( IotMqttConnectio
                     ( void ) _AwsIotShadow_GenerateShadowTopic( _AwsIotShadow_IntToShadowOperationType( i ),
                                                                 pThingName,
                                                                 thingNameLength,
+																pSubscription->pShadowName,
+																pSubscription->thingNameLength,
                                                                 &( pSubscription->pTopicBuffer ),
                                                                 &operationTopicLength );
 

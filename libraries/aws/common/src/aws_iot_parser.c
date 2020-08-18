@@ -137,6 +137,76 @@ bool AwsIot_ParseThingName( const char * pTopicName,
     IOT_FUNCTION_EXIT_NO_CLEANUP();
 }
 
+/**
+ * @brief Function that Parses out the shadow name from a topic
+ * 
+ * @param pTopicName 
+ * @param topicNameLength 
+ * @param pThingName 
+ * @param thingNameLength 
+ * @param pShadowName 
+ * @param pShadowNameLength 
+ * @return true 
+ * @return false 
+ */
+bool AwsIot_ParseShadowName(const char * pTopicName,
+        uint16_t topicNameLength,
+		const char * pThingName,
+		size_t thingNameLength,
+        const char ** pShadowName,
+        size_t * pShadowNameLength )
+{
+	IOT_FUNCTION_ENTRY( bool, true );
+	const char * pShadowNameStart = NULL;
+	size_t shadowNameLength = 0;
+
+	char prefix_string[150];
+	static const int prifix_string_size = 150;
+
+	/* Check that the topic name is at least as long as the minimum allowed. */
+	if( topicNameLength < MINIMUM_TOPIC_NAME_LENGTH )
+	{
+		IOT_SET_AND_GOTO_CLEANUP( false );
+	}
+
+	//Make the prefix string
+	memset(prefix_string, 0, prifix_string_size);
+	strcat(prefix_string, "$aws/things/");
+	strncat(prefix_string, pThingName, thingNameLength);
+	strcat(prefix_string, "/shadow/name/");
+
+	/* Check that the given topic starts with the common prefix. */
+	if( strncmp( prefix_string,
+				 pTopicName,
+				 strlen(prefix_string) ) != 0 )
+	{
+		IOT_SET_AND_GOTO_CLEANUP( false );
+	}
+
+	/* The Shadow Name starts immediately after the topic prefix. */
+	pShadowNameStart = pTopicName + strlen(prefix_string);
+
+	/* Calculate the length of the Thing Name, which is terminated with a '/'. */
+	while( ( shadowNameLength + AWS_IOT_TOPIC_PREFIX_LENGTH < ( size_t ) topicNameLength ) &&
+		   ( pShadowNameStart[ shadowNameLength ] != '/' ) )
+	{
+		shadowNameLength++;
+	}
+
+	/* The end of the topic name was reached without finding a '/'. The topic
+	 * name is invalid. */
+	if( shadowNameLength + AWS_IOT_TOPIC_PREFIX_LENGTH >= ( size_t ) topicNameLength )
+	{
+		IOT_SET_AND_GOTO_CLEANUP( false );
+	}
+
+	/* Set the output parameters. */
+	*pShadowName = pShadowNameStart;
+	*pShadowNameLength = shadowNameLength;
+
+	IOT_FUNCTION_EXIT_NO_CLEANUP();
+}
+
 /*-----------------------------------------------------------*/
 
 AwsIotStatus_t AwsIot_ParseStatus( const char * pTopicName,

@@ -149,6 +149,8 @@ static void _notifyCompletion( _shadowOperation_t * pOperation );
  */
 static AwsIotShadowError_t _findSubscription( const char * pThingName,
                                               size_t thingNameLength,
+											  const char * pShadowName,
+											  size_t shadowNameLength,
                                               char * pTopicBuffer,
                                               uint16_t operationTopicLength,
                                               _shadowOperation_t * pOperation,
@@ -346,12 +348,14 @@ static void _commonOperationCallback( _shadowOperationType_t type,
         /* Lock the pending operations list for exclusive access. */
         IotMutex_Lock( &( _AwsIotShadowPendingOperationsMutex ) );
 
+        IotLogDebug("%s Running IotListDouble_FindFirstMatch", __FUNCTION__);
         /* Search for a matching pending operation. */
         pOperationLink = IotListDouble_FindFirstMatch( &( _AwsIotShadowPendingOperations ),
                                                        NULL,
                                                        _shadowOperationMatch,
                                                        &param );
 
+        IotLogDebug("\tIotListDouble_FindFirstMatch returned %p", pOperationLink);
         /* Find and remove the first Shadow operation of the given type. */
         if( pOperationLink == NULL )
         {
@@ -590,6 +594,8 @@ static void _notifyCompletion( _shadowOperation_t * pOperation )
 
 static AwsIotShadowError_t _findSubscription( const char * pThingName,
                                               size_t thingNameLength,
+											  const char * pShadowName,
+											  size_t shadowNameLength,
                                               char * pTopicBuffer,
                                               uint16_t operationTopicLength,
                                               _shadowOperation_t * pOperation,
@@ -613,6 +619,8 @@ static AwsIotShadowError_t _findSubscription( const char * pThingName,
      * a new subscription if not found. */
     pSubscription = _AwsIotShadow_FindSubscription( pThingName,
                                                     thingNameLength,
+													pShadowName,
+													shadowNameLength,
                                                     true );
 
     if( pSubscription == NULL )
@@ -765,44 +773,85 @@ void _AwsIotShadow_DestroyOperation( void * pData )
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Function to generate the shadow topic string including the shadow name
+ * @param type
+ * @param shadow_name
+ * @param buffer
+ * @param buffer_size
+ * @return
+ */
+static inline AwsIotShadowError_t _AWS_IOT_Generate_Shadow_topic_By_Name(_shadowOperationType_t type, const char * shadow_name, int shadow_name_len, char * buffer, int buffer_size)
+{
+	const char * shadow_string = "/shadow/name/";
+	const uint16_t shadow_string_len = ( ( uint16_t ) ( sizeof( "/shadow/name/" ) - 1U ) );
+
+
+	const char * const opstring[SHADOW_OPERATION_COUNT] =
+	{
+			"/delete",
+			"/get",
+			"/update"
+	};
+
+	const uint16_t opstring_len[SHADOW_OPERATION_COUNT] = {
+			( ( uint16_t ) ( sizeof( "/delete" ) - 1U ) ),
+			( ( uint16_t ) ( sizeof( "/get" ) - 1U ) ),
+			( ( uint16_t ) ( sizeof( "/update" ) - 1U ) ),
+	};
+
+
+	if(NULL == shadow_name || NULL == buffer)
+	{
+		return AWS_IOT_SHADOW_BAD_PARAMETER;
+	}
+	if((opstring_len[type] + shadow_name_len + shadow_string_len) > buffer_size)
+	{
+		return AWS_IOT_SHADOW_NO_MEMORY;
+	}
+
+	memset(buffer, 0, buffer_size);
+
+	strncat(buffer, shadow_string, shadow_string_len);
+	strncat(buffer, shadow_name, shadow_name_len);
+	strncat(buffer, opstring[type], opstring_len[type]);
+
+	return AWS_IOT_SHADOW_SUCCESS;
+}
+
+
+
 AwsIotShadowError_t _AwsIotShadow_GenerateShadowTopic( _shadowOperationType_t type,
                                                        const char * pThingName,
                                                        size_t thingNameLength,
+													   const char * pShadowName,
+													   size_t shadowNameLength,
                                                        char ** pTopicBuffer,
                                                        uint16_t * pOperationTopicLength )
 {
     AwsIotShadowError_t status = AWS_IOT_SHADOW_SUCCESS;
     AwsIotTopicInfo_t topicInfo = { 0 };
 
-    /* Lookup table for Shadow operation strings. */
-    const char * const pOperationString[ SHADOW_OPERATION_COUNT ] =
-    {
-        SHADOW_DELETE_OPERATION_STRING, /* Shadow delete operation. */
-        SHADOW_GET_OPERATION_STRING,    /* Shadow get operation. */
-        SHADOW_UPDATE_OPERATION_STRING  /* Shadow update operation. */
-    };
+    char buffer[100];
 
-    /* Lookup table for Shadow operation string lengths. */
-    const uint16_t pOperationStringLength[ SHADOW_OPERATION_COUNT ] =
-    {
-        SHADOW_DELETE_OPERATION_STRING_LENGTH, /* Shadow delete operation. */
-        SHADOW_GET_OPERATION_STRING_LENGTH,    /* Shadow get operation. */
-        SHADOW_UPDATE_OPERATION_STRING_LENGTH  /* Shadow update operation. */
-    };
-
+    AwsIotShadow_Assert(NULL != pShadowName);
+    AwsIotShadow_Assert(0 != shadowNameLength);
     /* Only Shadow delete, get, and update operation types should be passed to this
      * function. */
     AwsIotShadow_Assert( ( type == SHADOW_DELETE ) ||
                          ( type == SHADOW_GET ) ||
                          ( type == SHADOW_UPDATE ) );
 
+    _AWS_IOT_Generate_Shadow_topic_By_Name(type, pShadowName, shadowNameLength, buffer, 100);
+
     /* Set the members needed to generate an operation topic. */
     topicInfo.pThingName = pThingName;
     topicInfo.thingNameLength = thingNameLength;
-    topicInfo.pOperationName = pOperationString[ type ];
-    topicInfo.operationNameLength = pOperationStringLength[ type ];
+    topicInfo.pOperationName = buffer;
+	topicInfo.operationNameLength = strlen(buffer);
     topicInfo.longestSuffixLength = SHADOW_LONGEST_SUFFIX_LENGTH;
     topicInfo.mallocString = AwsIotShadow_MallocString;
+
 
     if( AwsIot_GenerateOperationTopic( &topicInfo,
                                        pTopicBuffer,
@@ -810,7 +859,6 @@ AwsIotShadowError_t _AwsIotShadow_GenerateShadowTopic( _shadowOperationType_t ty
     {
         status = AWS_IOT_SHADOW_NO_MEMORY;
     }
-
     return status;
 }
 
@@ -819,6 +867,8 @@ AwsIotShadowError_t _AwsIotShadow_GenerateShadowTopic( _shadowOperationType_t ty
 AwsIotShadowError_t _AwsIotShadow_ProcessOperation( IotMqttConnection_t mqttConnection,
                                                     const char * pThingName,
                                                     size_t thingNameLength,
+													const char * pShadowName,
+													size_t shadowNameLength,
                                                     _shadowOperation_t * pOperation,
                                                     const AwsIotShadowDocumentInfo_t * pDocumentInfo )
 {
@@ -841,6 +891,8 @@ AwsIotShadowError_t _AwsIotShadow_ProcessOperation( IotMqttConnection_t mqttConn
     status = _AwsIotShadow_GenerateShadowTopic( pOperation->type,
                                                 pThingName,
                                                 thingNameLength,
+												pShadowName,
+												shadowNameLength,
                                                 &pTopicBuffer,
                                                 &operationTopicLength );
 
@@ -849,6 +901,8 @@ AwsIotShadowError_t _AwsIotShadow_ProcessOperation( IotMqttConnection_t mqttConn
         /* Get a subscription object for this Shadow operation. */
         status = _findSubscription( pThingName,
                                     thingNameLength,
+									pShadowName,
+									shadowNameLength,
                                     pTopicBuffer,
                                     operationTopicLength,
                                     pOperation,

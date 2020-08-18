@@ -620,6 +620,10 @@ IotMqttError_t _IotMqtt_DeserializePublish( _mqttPacket_t * pPublish )
         IotLog( IOT_LOG_DEBUG,
                 &_logHideAll,
                 "Payload length %hu.", pOutput->payloadLength );
+        IotLog( IOT_LOG_DEBUG,
+                &_logHideAll,
+                "Payload: %.*s", pOutput->payloadLength, (char*)pOutput->pPayload );
+        
     }
 
     return status;
