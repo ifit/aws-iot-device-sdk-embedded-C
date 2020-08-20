@@ -64,26 +64,5 @@ config AWS_TASK_POOL_MAX_TASKS
 	help
 		The maximum number of tasks in the AWS taskpool
 	    
-config AWS_ROOT_CERT
-	string "AWS Root Certificate Filename"
-	default "AmazonRootCA1.pem"
-	depends on AWS_SDK_ENABLED
-	help
-        The root certificate to use with AWS
-        
-config AWS_PRIVATE_KEY
-	string "AWS Device Private Key"
-	default "2f071dcd75-private.pem.key"
-	depends on AWS_SDK_ENABLED
-	help
-	    The devices private key that it uses with AWS
-	    
-config AWS_DEVICE_CERTIFICATE
-	string "AWS Device Certificate"
-	default "2f071dcd75-certificate.pem.crt"
-	depends on AWS_SDK_ENABLED
-	help
-	    The devices certificate for use with Amazon AWS
-	
 	    
 endmenu
