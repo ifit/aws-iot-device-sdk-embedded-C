@@ -629,13 +629,14 @@ AwsIotProvisioningError_t _AwsIotProvisioning_ParseRegisterThingResponse( AwsIot
                     IOT_SET_AND_GOTO_CLEANUP( AWS_IOT_PROVISIONING_INTERNAL_FAILURE );
                 }
 
-                pDeviceConfigurationList = AwsIotProvisioning_MallocDeviceConfigurationList( numOfDeviceConfigurationEntries *
-                                                                                             sizeof( AwsIotProvisioningResponseDeviceConfigurationEntry_t ) );
+                unsigned int alloc_size = numOfDeviceConfigurationEntries * sizeof( AwsIotProvisioningResponseDeviceConfigurationEntry_t );
+                pDeviceConfigurationList = AwsIotProvisioning_MallocDeviceConfigurationList( alloc_size );
 
-                if( pDeviceConfigurationList == NULL )
+                //Updated this as malloc may return NULL when allocating 0 Bytes
+                if( pDeviceConfigurationList == NULL && 0 < alloc_size)
                 {
-                    IotLogError( "Failure in allocating memory for device configuration data in response payload of %s operation",
-                                 REGISTER_THING_OPERATION_LOG );
+                    IotLogError( "Failure in allocating memory for device configuration data in response payload of %s operation, %u %u %u",
+                                 REGISTER_THING_OPERATION_LOG,  numOfDeviceConfigurationEntries, sizeof( AwsIotProvisioningResponseDeviceConfigurationEntry_t ), alloc_size);
                     IOT_SET_AND_GOTO_CLEANUP( AWS_IOT_PROVISIONING_NO_MEMORY );
                 }
 
@@ -703,13 +704,16 @@ AwsIotProvisioningError_t _AwsIotProvisioning_ParseRegisterThingResponse( AwsIot
                         IOT_SET_AND_GOTO_CLEANUP( AWS_IOT_PROVISIONING_BAD_RESPONSE );
                     }
 
-                    pDeviceConfigurationList[ configurationListIndex ].pKey = ( const char * )
-                                                                              deviceConfigInnerKeyDecoder.u.value.u.string.pString;
-                    pDeviceConfigurationList[ configurationListIndex ].keyLength = deviceConfigInnerKeyDecoder.u.value.u.string.length;
+                    if(0 < alloc_size)
+                    {
+                        pDeviceConfigurationList[ configurationListIndex ].pKey = ( const char * )
+                                                                                deviceConfigInnerKeyDecoder.u.value.u.string.pString;
+                        pDeviceConfigurationList[ configurationListIndex ].keyLength = deviceConfigInnerKeyDecoder.u.value.u.string.length;
 
-                    pDeviceConfigurationList[ configurationListIndex ].pValue = ( const char * )
-                                                                                deviceConfigInnerValueDecoder.u.value.u.string.pString;
-                    pDeviceConfigurationList[ configurationListIndex ].valueLength = deviceConfigInnerValueDecoder.u.value.u.string.length;
+                        pDeviceConfigurationList[ configurationListIndex ].pValue = ( const char * )
+                                                                                    deviceConfigInnerValueDecoder.u.value.u.string.pString;
+                        pDeviceConfigurationList[ configurationListIndex ].valueLength = deviceConfigInnerValueDecoder.u.value.u.string.length;
+                    }
 
                     _pAwsIotProvisioningDecoder->destroy( &deviceConfigInnerKeyDecoder );
                     _pAwsIotProvisioningDecoder->destroy( &deviceConfigInnerValueDecoder );
