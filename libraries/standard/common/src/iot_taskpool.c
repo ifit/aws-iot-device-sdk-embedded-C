@@ -1502,7 +1502,7 @@ static IotTaskPoolError_t _scheduleInternal( _taskPool_t * const pTaskPool,
             else
             {
                 /* Failure to create a worker thread may not hinder functional correctness, but rather just responsiveness. */
-                IotLogWarn( "Task pool failed to create a worker thread." );
+                IotLogInfo( "Task pool failed to create a worker thread." );
 
                 /* Failure to create a worker thread for a high priority job is considered a failure. */
                 if( mustGrow )
