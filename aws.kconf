@@ -11,7 +11,7 @@ config AWS_SDK_ENABLED
 
 config ICON_AWS_PORT_MEMPOOL_SIZE
     int "AWS Mempool Size"
-    default 8192
+    default 3000
     range 1024 16384
     depends on AWS_SDK_ENABLED
     help 
@@ -19,7 +19,7 @@ config ICON_AWS_PORT_MEMPOOL_SIZE
 
 config ICON_AWS_PORT_MEMPOOL_MAX_CHUNKS
     int "AWS Mempool max chunks"
-    default 128
+    default 32
     range 15 512
     depends on AWS_SDK_ENABLED
     help 
@@ -59,7 +59,7 @@ config AWS_TASK_POOL_TASK_SIZE
 config AWS_TASK_POOL_MAX_TASKS
 	int "AWS Task Pool max Tasks"
 	range 1 10
-	default 3
+	default 2
 	depends on AWS_SDK_ENABLED
 	help
 		The maximum number of tasks in the AWS taskpool
