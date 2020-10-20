@@ -1035,7 +1035,6 @@ IotNetworkError_t IotNetworkMbedtls_SetCloseCallback( IotNetworkConnection_t pCo
                                                       void * pContext )
 {
     IotNetworkError_t status = IOT_NETWORK_BAD_PARAMETER;
-
     if( closeCallback != NULL )
     {
         /* Set the callback and parameter. */
