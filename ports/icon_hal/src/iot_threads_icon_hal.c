@@ -443,7 +443,7 @@ void IotMutex_Lock(IotMutex_t *pMutex)
      */
     struct iot_mutex_data_s *typed;
 
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != pMutex);
     typed = pMutex->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
@@ -482,7 +482,7 @@ bool IotMutex_TryLock(IotMutex_t *pMutex)
     struct iot_mutex_data_s *typed;
     BaseType_t result;
 
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != pMutex);
     typed = pMutex->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
@@ -523,7 +523,7 @@ void IotMutex_Unlock(IotMutex_t *pMutex)
      */
     struct iot_mutex_data_s *typed;
 
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != pMutex);
     typed = pMutex->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
@@ -674,7 +674,7 @@ void IotSemaphore_Wait(IotSemaphore_t *pSemaphore)
     typed = pSemaphore->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed->handle);
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
 
     DEBUG_MSG("-s-s-s %s using semaphore at %p\r\n", __FUNCTION__, typed);
 
@@ -707,7 +707,7 @@ bool IotSemaphore_TryWait(IotSemaphore_t *pSemaphore)
     typed = pSemaphore->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed->handle);
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
 
     DEBUG_MSG("-s-s-s %s using semaphore at %p\r\n", __FUNCTION__, typed);
 
@@ -747,7 +747,7 @@ bool IotSemaphore_TimedWait(IotSemaphore_t *pSemaphore,
     typed = pSemaphore->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed->handle);
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
 
     DEBUG_MSG("-s-s-s %s using semaphore at %p\r\n", __FUNCTION__, typed);
 
@@ -777,7 +777,7 @@ void IotSemaphore_Post(IotSemaphore_t *pSemaphore)
     typed = pSemaphore->pointer;
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed);
     IH_ASSERT(IH_ERR_LEVEL_ERROR, NULL != typed->handle);
-    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == ih_in_interrupt());
+    IH_ASSERT(IH_ERR_LEVEL_ERROR, false == xPortInIsrContext());
 
     DEBUG_MSG("-s-s-s %s using semaphore at %p\r\n", __FUNCTION__, typed);
 
