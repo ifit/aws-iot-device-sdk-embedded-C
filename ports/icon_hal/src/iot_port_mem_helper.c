@@ -54,7 +54,6 @@
 struct mem_helper_data_s
 {
     bool initialized; //!< Tells if we are initialized
-//    ih_mempool_handle_t mempool; //!< The memory pool handle
     multi_heap_handle_t mempool; //!< The Multi Heap Handle Memory Pool
     ih_mempool_handle_t taskpool; //!< The memory pool handle for the task pool
 };
@@ -90,7 +89,6 @@ static void init_as_needed(void)
     if(false == mem_helper.initialized)
     {
         mem_helper.initialized = true;
-//        mem_helper.mempool = IH_MEM_POOL_CREATE(iot_helper_pool, CONFIG_ICON_AWS_PORT_MEMPOOL_SIZE, CONFIG_ICON_AWS_PORT_MEMPOOL_MAX_CHUNKS);
         mem_helper.mempool = multi_heap_register(aws_heap, AWS_HEAP_SIZE);
         mem_helper.taskpool = IH_MEM_POOL_CREATE(iot_task_pool, IOT_TASK_POOL_SIZE, CONFIG_AWS_TASK_POOL_MAX_TASKS);
     }
@@ -132,7 +130,6 @@ void iot_port_free(void *ptr)
 {
     IOT_MEM_ENTER_CRITICAL()
     init_as_needed();
-//    ih_mempool_free(mem_helper.mempool, ptr);
     multi_heap_free(mem_helper.mempool, ptr);
     IOT_MEM_EXIT_CRITICAL()
 }
