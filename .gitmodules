@@ -1,7 +1,15 @@
-[submodule "third_party/tinycbor/tinycbor"]
-	path = third_party/tinycbor/tinycbor
-	url = https://github.com/intel/tinycbor.git
-[submodule "third_party/mbedtls/mbedtls"]
-	path = third_party/mbedtls/mbedtls
-	url = https://github.com/ARMmbed/mbedtls.git
-	branch = mbedtls-2.16.8
+[submodule "libraries/3rdparty/CMock"]
+	path = libraries/3rdparty/CMock
+	url = https://github.com/ThrowTheSwitch/CMock
+[submodule "tools/aws-templates-for-cbmc-proofs"]
+	path = tools/aws-templates-for-cbmc-proofs
+	url = https://github.com/awslabs/aws-templates-for-cbmc-proofs.git
+[submodule "libraries/standard/coreMQTT"]
+	path = libraries/standard/coreMQTT
+	url = https://github.com/FreeRTOS/coreMQTT.git
+[submodule "libraries/standard/coreJSON"]
+	path = libraries/standard/coreJSON
+	url = https://github.com/FreeRTOS/coreJSON.git
+[submodule "libraries/aws/device-shadow-for-aws-iot-embedded-sdk"]
+	path = libraries/aws/device-shadow-for-aws-iot-embedded-sdk
+	url = https://github.com/aws/device-shadow-for-aws-iot-embedded-sdk.git

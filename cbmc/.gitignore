@@ -1,7 +1,0 @@
-*.csv
-*.log
-__pycache__
-.ninja_deps
-.ninja_log
-build.ninja
-*.yaml
