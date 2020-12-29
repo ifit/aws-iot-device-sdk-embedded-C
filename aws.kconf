@@ -32,11 +32,42 @@ config DEBUG_AWS_PORT_LAYER
     depends on AWS_SDK_ENABLED
     help 
          Turn on debug messages for the AWS Port Layer
+         
+choice AWS_API_ENDPOINT_CHOICE
+    depends on AWS_SDK_ENABLED
+	prompt "AWS Endpoint"
+	
+	config AWS_API_ENDPOINT_DEV
+	bool "Dev"
+	
+	config AWS_API_ENDPOINT_PRODUCTION
+	bool "Production"
+	
+	config AWS_API_ENDPOINT_CUSTOM
+	bool "Custom"
+endchoice
+
+config AWS_API_ENDPOINT
+	string
+	default "a3kian81cx7gr0-ats.iot.us-east-1.amazonaws.com"
+	depends on AWS_SDK_ENABLED
+	depends on AWS_API_ENDPOINT_PRODUCTION
+	help
+		The AWS Endpoint to use with this device
+
+config AWS_API_ENDPOINT
+	string
+	default "afrxa46vfj5mj-ats.iot.us-east-2.amazonaws.com"
+	depends on AWS_SDK_ENABLED
+	depends on AWS_API_ENDPOINT_DEV
+	help
+		The AWS Endpoint to use with this device
 
 config AWS_API_ENDPOINT
 	string "AWS API Endpoint"
 	default "afrxa46vfj5mj-ats.iot.us-east-2.amazonaws.com"
 	depends on AWS_SDK_ENABLED
+	depends on AWS_API_ENDPOINT_CUSTOM
 	help
 		The AWS Endpoint to use with this device
 		
