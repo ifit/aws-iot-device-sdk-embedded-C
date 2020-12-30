@@ -57,7 +57,7 @@ config AWS_API_ENDPOINT
 
 config AWS_API_ENDPOINT
 	string
-	default "afrxa46vfj5mj-ats.iot.us-east-2.amazonaws.com"
+	default "a2fegxsxgdhsbn-ats.iot.us-east-1.amazonaws.com"
 	depends on AWS_SDK_ENABLED
 	depends on AWS_API_ENDPOINT_DEV
 	help
@@ -65,7 +65,7 @@ config AWS_API_ENDPOINT
 
 config AWS_API_ENDPOINT
 	string "AWS API Endpoint"
-	default "afrxa46vfj5mj-ats.iot.us-east-2.amazonaws.com"
+	default "a2fegxsxgdhsbn-ats.iot.us-east-1.amazonaws.com"
 	depends on AWS_SDK_ENABLED
 	depends on AWS_API_ENDPOINT_CUSTOM
 	help
