@@ -4,6 +4,10 @@ project( AwsIotDeviceSdkEmbeddedC
          VERSION 202012.01
          LANGUAGES C )
 
+if(NOT DEFINED AWS_BUILD_DEMOS)
+    set(AWS_BUILD_DEMOS ON)
+endif(NOT DEFINED AWS_BUILD_DEMOS)
+
 # Allow the project to be organized into folders.
 set_property( GLOBAL PROPERTY USE_FOLDERS ON )
 
@@ -46,7 +50,7 @@ CMAKE_DEPENDENT_OPTION( BUILD_SHARED_LIBS
                         "Set this to ON to build all libraries as shared libraries. When OFF, libraries build as static libraries."
                         ON "${ALLOW_SHARED_LIBRARIES}"
                         OFF )
-
+                        
 # Set output directories.
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -95,8 +99,10 @@ if(BUILD_TESTS)
     # Add build configuration for integration tests.
     add_subdirectory( integration-test )
 else()
-    # Add build configuration for demos.
-    add_subdirectory( demos )
+    if(AWS_BUILD_DEMOS)
+        # Add build configuration for demos.
+        add_subdirectory( demos )
+    endif(AWS_BUILD_DEMOS)
 endif()
 
 if(DOWNLOAD_CERTS)
