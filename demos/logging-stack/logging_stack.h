@@ -28,6 +28,8 @@
 #ifndef LOGGING_STACK_H_
 #define LOGGING_STACK_H_
 
+#warning "This file should not be used in builds for Icon Health and Fitness"
+
 /* Include header for logging level macros. */
 #include "logging_levels.h"
 
